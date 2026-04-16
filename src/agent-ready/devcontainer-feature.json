@@ -1,0 +1,44 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainerFeature.schema.json",
+  "id": "agent-ready",
+  "version": "1.0.0",
+  "name": "Agent-Ready Dev Environment",
+  "description": "Opinionated devcontainer setup for AI-assisted coding workflows: mise-managed tools, Starship prompt in zsh, Claude Code pre-accepts (onboarding, trust dialog, bypass-permissions warning), SSH commit signing auto-config, and host auth-token status reporting. Designed so agents (Claude Code, Cursor Agent, Codex) can operate in the container without interactive prompts.",
+  "documentationURL": "https://github.com/moisesmorillo/devcontainer-features/tree/main/src/agent-ready",
+  "licenseURL": "https://github.com/moisesmorillo/devcontainer-features/blob/main/LICENSE",
+
+  "options": {
+    "starshipVersion": {
+      "type": "string",
+      "default": "1.24.2",
+      "description": "Starship version pinned via mise (semver without the 'v' prefix)."
+    },
+    "installStarship": {
+      "type": "boolean",
+      "default": true,
+      "description": "Install Starship prompt and wire it into the zsh rc file."
+    },
+    "claudeBypassPermissions": {
+      "type": "boolean",
+      "default": true,
+      "description": "Pre-accept Claude Code's bypass-permissions dialog. Safe in ephemeral devcontainers; disable for environments with real host access."
+    }
+  },
+
+  "dependsOn": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": false,
+      "installOhMyZshConfig": false,
+      "configureZshAsDefaultShell": true,
+      "username": "vscode",
+      "upgradePackages": false
+    }
+  },
+
+  "postCreateCommand": "/usr/local/share/agent-ready/post-create.sh",
+
+  "containerEnv": {
+    "MISE_YES": "1"
+  }
+}

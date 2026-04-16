@@ -1,0 +1,34 @@
+name: "Release Dev Container Features"
+
+# Publishes each feature under src/ to ghcr.io as an OCI artifact.
+# Triggered on any v* tag (e.g. v1.0.0), and manually via workflow_dispatch.
+#
+# The devcontainers/action auto-computes the semver tag ladder:
+#   tag v1.2.3 → publishes :1, :1.2, :1.2.3, and :latest
+# so consumers can pin to any precision they prefer.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Publish Features to GHCR
+        uses: devcontainers/action@v1
+        with:
+          publish-features: "true"
+          base-path-to-features: "./src"
+          generate-docs: "true"
+          oci-registry: "ghcr.io"
+          # Results in: ghcr.io/moisesmorillo/devcontainer-features/<feature-id>:<version>
+          features-namespace: ${{ github.repository }}
