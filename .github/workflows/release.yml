@@ -28,6 +28,13 @@ jobs:
 
       - name: Publish Features to GHCR
         uses: devcontainers/action@v1
+        env:
+          # Explicit export: the action reads GITHUB_TOKEN via process.env
+          # and passes it to devcontainers/cli. `permissions:` at the job
+          # level grants scope to the token but does NOT export it as an
+          # env var — each action has to ask. Without this block the CLI
+          # falls back to anonymous and GHCR returns 403 DENIED.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           publish-features: "true"
           base-path-to-features: "./src"
