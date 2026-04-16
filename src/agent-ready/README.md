@@ -27,13 +27,24 @@ Prints a clear "did GH_TOKEN / CLAUDE_CODE_OAUTH_TOKEN land?" banner at the end 
 
 ## Usage
 
+This feature requires [`common-utils`](https://github.com/devcontainers/features/tree/main/src/common-utils) to be declared alongside it — it depends on zsh being installed before post-create runs. Declare both:
+
 ```json
 {
   "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": false,
+      "installOhMyZshConfig": false,
+      "configureZshAsDefaultShell": true,
+      "username": "vscode"
+    },
     "ghcr.io/moisesmorillo/devcontainer-features/agent-ready:1": {}
   }
 }
 ```
+
+The `installsAfter` directive in this feature guarantees common-utils runs first, but the spec's strict validator does not allow auto-installing dependencies with custom options — you must declare common-utils explicitly.
 
 ## Options
 
@@ -56,10 +67,6 @@ Example with options:
   }
 }
 ```
-
-## Dependencies
-
-This feature auto-installs [`common-utils`](https://github.com/devcontainers/features/tree/main/src/common-utils) with sensible defaults (zsh, configured as default shell, Oh My Zsh off). You don't need to declare it separately.
 
 ## Recommended companion setup
 

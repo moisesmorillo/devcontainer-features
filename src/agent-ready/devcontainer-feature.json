@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainerFeature.schema.json",
   "id": "agent-ready",
   "version": "1.0.0",
   "name": "Agent-Ready Dev Environment",
@@ -25,16 +24,9 @@
     }
   },
 
-  "dependsOn": {
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": true,
-      "installOhMyZsh": false,
-      "installOhMyZshConfig": false,
-      "configureZshAsDefaultShell": true,
-      "username": "vscode",
-      "upgradePackages": false
-    }
-  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ],
 
   "postCreateCommand": "/usr/local/share/agent-ready/post-create.sh",
 
