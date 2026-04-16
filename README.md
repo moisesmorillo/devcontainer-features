@@ -12,18 +12,11 @@ Designed so coding agents (Claude Code, Cursor Agent, Codex) can operate inside 
 
 ## Using a feature
 
-Reference it in your `.devcontainer/devcontainer.json` alongside [`common-utils`](https://github.com/devcontainers/features/tree/main/src/common-utils) (required for zsh):
+Reference it in your `.devcontainer/devcontainer.json` — it's self-contained:
 
 ```json
 {
   "features": {
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": true,
-      "installOhMyZsh": false,
-      "installOhMyZshConfig": false,
-      "configureZshAsDefaultShell": true,
-      "username": "vscode"
-    },
     "ghcr.io/moisesmorillo/devcontainer-features/agent-ready:1": {}
   }
 }

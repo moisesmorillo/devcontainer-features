@@ -27,7 +27,21 @@ Prints a clear "did GH_TOKEN / CLAUDE_CODE_OAUTH_TOKEN land?" banner at the end 
 
 ## Usage
 
-This feature requires [`common-utils`](https://github.com/devcontainers/features/tree/main/src/common-utils) to be declared alongside it — it depends on zsh being installed before post-create runs. Declare both:
+Self-contained — declare it alone and you get zsh, mise, starship, Claude Code pre-accepts, and SSH commit signing:
+
+```json
+{
+  "features": {
+    "ghcr.io/moisesmorillo/devcontainer-features/agent-ready:1": {}
+  }
+}
+```
+
+The feature auto-detects what's already present: if `zsh` is missing it installs it via apt and runs `chsh`; if it's already set up (e.g. because you declared `common-utils` alongside), the install step is a no-op.
+
+### Optional: pair with `common-utils`
+
+If you already want [`common-utils`](https://github.com/devcontainers/features/tree/main/src/common-utils) for other reasons (sudoers setup, a specific non-root user, Oh My Zsh, etc.), declare it alongside. `installsAfter` ensures it runs first:
 
 ```json
 {
@@ -35,7 +49,6 @@ This feature requires [`common-utils`](https://github.com/devcontainers/features
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": true,
       "installOhMyZsh": false,
-      "installOhMyZshConfig": false,
       "configureZshAsDefaultShell": true,
       "username": "vscode"
     },
@@ -43,8 +56,6 @@ This feature requires [`common-utils`](https://github.com/devcontainers/features
   }
 }
 ```
-
-The `installsAfter` directive in this feature guarantees common-utils runs first, but the spec's strict validator does not allow auto-installing dependencies with custom options — you must declare common-utils explicitly.
 
 ## Options
 

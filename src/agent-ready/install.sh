@@ -21,23 +21,33 @@ USERNAME="${_REMOTE_USER:-vscode}"
 USER_HOME="$(getent passwd "$USERNAME" | cut -d: -f6)"
 
 if [[ -z "$USER_HOME" ]]; then
-  echo "ERROR: agent-ready: user '$USERNAME' not found. Is common-utils installed?" >&2
+  echo "ERROR: agent-ready: user '$USERNAME' not found." >&2
+  echo "Set 'remoteUser' in devcontainer.json, or use a base image that creates a user." >&2
   exit 1
 fi
 
-# Defensive: zsh must exist. dependsOn common-utils ensures it, but we
-# fail fast with a clear message if someone disabled the dependency.
-if ! command -v zsh >/dev/null 2>&1; then
-  echo "ERROR: agent-ready: zsh is required but not installed." >&2
-  echo "Declare the common-utils feature with installZsh=true, or install zsh in your base image." >&2
-  exit 1
-fi
+# Install apt packages. We batch zstd (mise tarball extraction), jq
+# (post-create.sh needs it for claude.json), and zsh (fallback if the
+# consumer didn't declare common-utils) into a single apt transaction
+# so the package index is only fetched once.
+NEEDS_APT=(ca-certificates)
+command -v zstd >/dev/null 2>&1 || NEEDS_APT+=(zstd)
+command -v jq   >/dev/null 2>&1 || NEEDS_APT+=(jq)
+command -v zsh  >/dev/null 2>&1 || NEEDS_APT+=(zsh)
 
-echo "==> [agent-ready] Installing apt packages (zstd, jq)..."
+echo "==> [agent-ready] Installing apt packages: ${NEEDS_APT[*]}..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq --no-install-recommends zstd jq ca-certificates
+apt-get install -y -qq --no-install-recommends "${NEEDS_APT[@]}"
 apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Make zsh the login shell if it isn't already. Idempotent: no-op when
+# common-utils already ran chsh, or when the base image set zsh as default.
+CURRENT_SHELL="$(getent passwd "$USERNAME" | cut -d: -f7)"
+if [[ "$CURRENT_SHELL" != "/usr/bin/zsh" && "$CURRENT_SHELL" != "/bin/zsh" ]]; then
+  echo "==> [agent-ready] Setting zsh as default shell for $USERNAME (was $CURRENT_SHELL)..."
+  chsh -s "$(command -v zsh)" "$USERNAME"
+fi
 
 echo "==> [agent-ready] Installing mise for $USERNAME..."
 # Run the installer as the target user so $HOME is correct and no chown is needed.
