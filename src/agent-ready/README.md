@@ -5,10 +5,15 @@ Opinionated devcontainer setup for AI-assisted coding workflows.
 ## What it does
 
 **Shell + prompt**
-- Installs zsh (via the `common-utils` dependency) and makes it the login shell
+- Installs zsh (auto-installed if missing; pairs cleanly with `common-utils` if declared)
 - Installs [mise](https://mise.jdx.dev/) for the remote user
 - Pins and installs [Starship](https://starship.rs/) via mise
 - Wires both `.bashrc` and `.zshrc` with activations so interactive shells **and** non-interactive subprocesses resolve tools
+
+**Agent toolkit**
+- [Neovim](https://neovim.io/) — editor that agents commonly invoke
+- [Lazygit](https://github.com/jesseduffield/lazygit) — fast git TUI
+- Both installed via mise, both can be version-pinned or disabled per-project
 
 **Claude Code ready**
 Pre-accepts three Claude Code dialogs so agents run without interactive prompts:
@@ -64,6 +69,8 @@ If you already want [`common-utils`](https://github.com/devcontainers/features/t
 | `starshipVersion` | string | `"1.24.2"` | Starship version pinned via mise (semver without the `v` prefix) |
 | `installStarship` | boolean | `true` | Install Starship and wire it into `.zshrc`. Disable if you prefer a different prompt |
 | `claudeBypassPermissions` | boolean | `true` | Pre-accept `--dangerously-skip-permissions`. Disable for environments with real host access |
+| `neovimVersion` | string | `"latest"` | Neovim version installed via mise. Set to `"none"` to skip, or pin (e.g. `"0.10.2"`) |
+| `lazygitVersion` | string | `"latest"` | Lazygit version installed via mise. Set to `"none"` to skip, or pin (e.g. `"0.44.1"`) |
 
 Example with options:
 
@@ -73,7 +80,9 @@ Example with options:
     "ghcr.io/moisesmorillo/devcontainer-features/agent-ready:1": {
       "starshipVersion": "1.25.0",
       "installStarship": true,
-      "claudeBypassPermissions": true
+      "claudeBypassPermissions": true,
+      "neovimVersion": "0.10.2",
+      "lazygitVersion": "none"
     }
   }
 }

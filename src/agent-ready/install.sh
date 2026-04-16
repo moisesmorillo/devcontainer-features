@@ -17,6 +17,8 @@ set -euo pipefail
 
 STARSHIP_VERSION="${STARSHIPVERSION:-1.24.2}"
 INSTALL_STARSHIP="${INSTALLSTARSHIP:-true}"
+NEOVIM_VERSION="${NEOVIMVERSION:-latest}"
+LAZYGIT_VERSION="${LAZYGITVERSION:-latest}"
 USERNAME="${_REMOTE_USER:-vscode}"
 USER_HOME="$(getent passwd "$USERNAME" | cut -d: -f6)"
 
@@ -56,6 +58,19 @@ su - "$USERNAME" -c 'curl -fsSL https://mise.run | sh'
 if [[ "$INSTALL_STARSHIP" == "true" ]]; then
   echo "==> [agent-ready] Pinning starship@$STARSHIP_VERSION via mise..."
   su - "$USERNAME" -c "\$HOME/.local/bin/mise use -g starship@$STARSHIP_VERSION"
+fi
+
+# Neovim and lazygit round out the "agent-ready" toolkit — agents
+# commonly invoke an editor and a git TUI. Both accept "none" to skip
+# (e.g. for minimal images) or a pinned version for reproducibility.
+if [[ "$NEOVIM_VERSION" != "none" ]]; then
+  echo "==> [agent-ready] Installing neovim@$NEOVIM_VERSION via mise..."
+  su - "$USERNAME" -c "\$HOME/.local/bin/mise use -g neovim@$NEOVIM_VERSION"
+fi
+
+if [[ "$LAZYGIT_VERSION" != "none" ]]; then
+  echo "==> [agent-ready] Installing lazygit@$LAZYGIT_VERSION via mise..."
+  su - "$USERNAME" -c "\$HOME/.local/bin/mise use -g lazygit@$LAZYGIT_VERSION"
 fi
 
 echo "==> [agent-ready] Seeding shell rc files..."
