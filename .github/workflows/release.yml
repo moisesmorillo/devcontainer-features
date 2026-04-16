@@ -19,6 +19,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # id-token: write is required on first publish — GHCR's OIDC bearer
+      # token exchange refuses the GITHUB_TOKEN otherwise (403 DENIED).
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
