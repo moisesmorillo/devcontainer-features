@@ -9,8 +9,12 @@
 # inside the container as a fallback.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OUT="$SCRIPT_DIR/.env.devcontainer"
+# Output path resolves relative to CWD, which is the workspace root when
+# the devcontainer runtime invokes initializeCommand. BASH_SOURCE is
+# unreliable here because this script may be piped via `bash -c` from a
+# shim (the curl-based pattern), in which case there is no source file.
+OUT="$(pwd)/.devcontainer/.env.devcontainer"
+mkdir -p "$(dirname "$OUT")"
 OS="$(uname -s)"
 
 gh_token=""
