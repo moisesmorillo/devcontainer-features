@@ -56,6 +56,18 @@ jq --arg ws "$WORKSPACE_PATH" "$JQ_PROGRAM" \
   "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp" && mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
 
 # ---------------------------------------------------------------------------
+# Git safe.directory — accept the bind-mounted workspace.
+# ---------------------------------------------------------------------------
+# Docker bind-mounts don't preserve ownership 1:1 across host/container
+# boundaries. Git 2.35.2+ refuses to operate on repos it sees as
+# "owned by someone else" (CVE-2022-24765 mitigation). Marking $(pwd)
+# safe tells git this mismatch is intentional. Without it, `git status`
+# errors out and tools built on top (lazygit, hooks, CI scripts) panic.
+# $(pwd) resolves to the workspaceFolder — post-create runs with CWD
+# set there by the devcontainer runtime.
+git config --global --add safe.directory "$(pwd)"
+
+# ---------------------------------------------------------------------------
 # Git SSH commit signing — auto-detect public key from mounted ~/.ssh.
 # ---------------------------------------------------------------------------
 SSH_PUB_KEY=""
