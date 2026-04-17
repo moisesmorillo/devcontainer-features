@@ -104,6 +104,22 @@ for rc in "$USER_HOME/.bashrc" "$USER_HOME/.zshrc"; do
   fi
   grep -q 'dangerously-skip-permissions' "$rc" 2>/dev/null || \
     echo 'alias claude="claude --dangerously-skip-permissions"' >> "$rc"
+
+  # Source .env.devcontainer from the workspace bind-mount so that
+  # token refreshes propagate WITHOUT rebuilding the container. The
+  # file is written by init-secrets.sh on the host and immediately
+  # visible inside the container via the bind mount. Every new shell
+  # (interactive or claude's git subprocess) picks up fresh values.
+  grep -q 'env.devcontainer' "$rc" 2>/dev/null || \
+    cat >> "$rc" << 'RCEOF'
+
+# Load host-injected tokens (GH_TOKEN, CLAUDE_CODE_OAUTH_TOKEN, git identity).
+# Updated live by `mise run dev:inject` without needing a container rebuild.
+if [[ -f "${DEVCONTAINER_ENV_FILE:-.devcontainer/.env.devcontainer}" ]]; then
+  set -a; source "${DEVCONTAINER_ENV_FILE:-.devcontainer/.env.devcontainer}"; set +a
+fi
+RCEOF
+
   chown "$USERNAME:$USERNAME" "$rc"
 done
 
