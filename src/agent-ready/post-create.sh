@@ -29,6 +29,19 @@ if [[ -d "$HOME/.claude" ]]; then
   sudo chown -R "$(id -u):$(id -g)" "$HOME/.claude" 2>/dev/null || true
 fi
 
+# Remove stale .credentials.json when CLAUDE_CODE_OAUTH_TOKEN is present.
+# The env var (injected by init-secrets from the host Keychain) is the
+# single source of truth. A .credentials.json left over from a previous
+# `claude login` inside the container takes precedence and causes Claude
+# Code to use a different identity profile (e.g. "Claude Agent" /
+# "agent@domain") instead of the user's real git identity. Deleting it
+# forces Claude to fall back to the env var, which carries the user's
+# actual OAuth profile.
+if [[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" && -f "$HOME/.claude/.credentials.json" ]]; then
+  echo "==> [agent-ready] Removing stale .credentials.json (CLAUDE_CODE_OAUTH_TOKEN takes precedence)"
+  rm -f "$HOME/.claude/.credentials.json"
+fi
+
 # Three dialogs we pre-accept by seeding ~/.claude.json:
 #   hasCompletedOnboarding          — workaround for anthropics/claude-code#46259
 #                                     (CLAUDE_CODE_OAUTH_TOKEN is ignored otherwise)
