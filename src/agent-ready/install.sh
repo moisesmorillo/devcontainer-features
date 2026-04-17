@@ -85,11 +85,6 @@ if [[ "$CLAUDE_CODE_VERSION" != "none" ]]; then
   su - "$USERNAME" -c "\$HOME/.local/bin/mise use -g claude-code@$CLAUDE_CODE_VERSION"
 fi
 
-# Record plugin-install preference so post-create knows whether to
-# read .claude/settings.json.
-echo "${INSTALL_CLAUDE_PLUGINS:-true}" > /usr/local/share/agent-ready/.install-claude-plugins
-chmod 0644 /usr/local/share/agent-ready/.install-claude-plugins
-
 echo "==> [agent-ready] Seeding shell rc files..."
 # Append activations only if missing. We write to BOTH rc files because:
 #   - .zshrc is the primary interactive shell after common-utils chsh
@@ -116,10 +111,12 @@ echo "==> [agent-ready] Staging post-create.sh at /usr/local/share/agent-ready/.
 mkdir -p /usr/local/share/agent-ready
 cp "$(dirname "$0")/post-create.sh" /usr/local/share/agent-ready/post-create.sh
 chmod 0755 /usr/local/share/agent-ready/post-create.sh
-# Propagate the claudeBypassPermissions option to post-create via a file.
-# Env vars don't survive between feature install and postCreateCommand,
-# so we pin the decision at build time.
+# Propagate feature options to post-create via files. Env vars don't
+# survive between feature install and postCreateCommand, so we pin
+# decisions at build time into /usr/local/share/agent-ready/.
 echo "${CLAUDEBYPASSPERMISSIONS:-true}" > /usr/local/share/agent-ready/.bypass-permissions
 chmod 0644 /usr/local/share/agent-ready/.bypass-permissions
+echo "${INSTALL_CLAUDE_PLUGINS:-true}" > /usr/local/share/agent-ready/.install-claude-plugins
+chmod 0644 /usr/local/share/agent-ready/.install-claude-plugins
 
 echo "==> [agent-ready] Install complete."
