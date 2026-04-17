@@ -11,9 +11,11 @@ Opinionated devcontainer setup for AI-assisted coding workflows.
 - Wires both `.bashrc` and `.zshrc` with activations so interactive shells **and** non-interactive subprocesses resolve tools
 
 **Agent toolkit**
+- [Claude Code](https://docs.claude.com/en/docs/claude-code) — the agent CLI itself (global default; repo `mise.toml` can override the version)
+- Auto-installs plugins declared in the workspace's `.claude/settings.json` during post-create (idempotent — skips already-installed, retries "unknown" states)
 - [Neovim](https://neovim.io/) — editor that agents commonly invoke
 - [Lazygit](https://github.com/jesseduffield/lazygit) — fast git TUI
-- Both installed via mise, both can be version-pinned or disabled per-project
+- All installed via mise, all can be version-pinned or disabled per-project
 
 **Claude Code ready**
 Pre-accepts three Claude Code dialogs so agents run without interactive prompts:
@@ -71,6 +73,8 @@ If you already want [`common-utils`](https://github.com/devcontainers/features/t
 | `claudeBypassPermissions` | boolean | `true` | Pre-accept `--dangerously-skip-permissions`. Disable for environments with real host access |
 | `neovimVersion` | string | `"latest"` | Neovim version installed via mise. Set to `"none"` to skip, or pin (e.g. `"0.10.2"`) |
 | `lazygitVersion` | string | `"latest"` | Lazygit version installed via mise. Set to `"none"` to skip, or pin (e.g. `"0.44.1"`) |
+| `claudeCodeVersion` | string | `"latest"` | Claude Code CLI version. Consumer repos can override by declaring `claude-code` in their own `mise.toml`. Set to `"none"` to skip (disables plugin install too) |
+| `installClaudePlugins` | boolean | `true` | Auto-install plugins declared in the workspace's `.claude/settings.json` during post-create |
 
 Example with options:
 
@@ -82,11 +86,17 @@ Example with options:
       "installStarship": true,
       "claudeBypassPermissions": true,
       "neovimVersion": "0.10.2",
-      "lazygitVersion": "none"
+      "lazygitVersion": "none",
+      "claudeCodeVersion": "latest",
+      "installClaudePlugins": true
     }
   }
 }
 ```
+
+### Version control for claude-code
+
+The feature installs `claude-code` globally via mise as a **default**, not a mandate. If your repo's `mise.toml` declares `claude-code = "2.1.110"` (or any version), mise's local-wins precedence means the repo's pinned version is what runs in that working directory. Keep `claude-code` in your `mise.toml` for reproducibility; the feature's global install is there to guarantee `claude` exists on fresh containers before your `mise install --yes` completes (which matters so post-create's plugin installer can actually invoke `claude plugin install`).
 
 ## Recommended companion setup
 

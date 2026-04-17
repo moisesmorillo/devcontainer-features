@@ -96,6 +96,35 @@ if [[ -n "$SSH_PUB_KEY" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Claude Code plugin install — reads workspace .claude/settings.json.
+# ---------------------------------------------------------------------------
+# We run plugin installs here rather than in install.sh because (a) the
+# workspace is only bind-mounted at post-create time, and (b) the claude
+# CLI needs its credentials which arrive via env_file. Idempotent: skips
+# plugins already installed, retries entries stuck at version "unknown"
+# (the "enabled but not fully downloaded" state we've seen in practice).
+INSTALL_CLAUDE_PLUGINS="$(cat "$SHARE_DIR/.install-claude-plugins" 2>/dev/null || echo "true")"
+SETTINGS_JSON="$(pwd)/.claude/settings.json"
+INSTALLED_DB="$HOME/.claude/plugins/installed_plugins.json"
+
+if [[ "$INSTALL_CLAUDE_PLUGINS" == "true" && -f "$SETTINGS_JSON" ]] && command -v claude >/dev/null 2>&1; then
+  echo "==> [agent-ready] Installing Claude Code plugins from $SETTINGS_JSON..."
+  jq -r '.enabledPlugins // {} | keys[]' "$SETTINGS_JSON" | while read -r plugin; do
+    [[ -z "$plugin" ]] && continue
+    STATUS=$(jq -r --arg p "$plugin" '.plugins[$p][0].version // "missing"' "$INSTALLED_DB" 2>/dev/null || echo "missing")
+    if [[ "$STATUS" == "missing" || "$STATUS" == "unknown" ]]; then
+      echo "    installing: $plugin"
+      claude plugin install "$plugin" --scope project \
+        || echo "    WARNING: failed to install $plugin (retry manually: claude plugin install $plugin)"
+    else
+      echo "    already installed: $plugin (v$STATUS)"
+    fi
+  done
+elif [[ "$INSTALL_CLAUDE_PLUGINS" == "true" && -f "$SETTINGS_JSON" ]]; then
+  echo "==> [agent-ready] claude CLI not on PATH — skipping plugin install. Set claudeCodeVersion to install it."
+fi
+
+# ---------------------------------------------------------------------------
 # Auth-token status report.
 # ---------------------------------------------------------------------------
 # Tokens arrive via env_file loaded by docker-compose. When absent, the

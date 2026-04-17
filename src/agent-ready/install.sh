@@ -19,6 +19,8 @@ STARSHIP_VERSION="${STARSHIPVERSION:-1.24.2}"
 INSTALL_STARSHIP="${INSTALLSTARSHIP:-true}"
 NEOVIM_VERSION="${NEOVIMVERSION:-latest}"
 LAZYGIT_VERSION="${LAZYGITVERSION:-latest}"
+CLAUDE_CODE_VERSION="${CLAUDECODEVERSION:-latest}"
+INSTALL_CLAUDE_PLUGINS="${INSTALLCLAUDEPLUGINS:-true}"
 USERNAME="${_REMOTE_USER:-vscode}"
 USER_HOME="$(getent passwd "$USERNAME" | cut -d: -f6)"
 
@@ -72,6 +74,21 @@ if [[ "$LAZYGIT_VERSION" != "none" ]]; then
   echo "==> [agent-ready] Installing lazygit@$LAZYGIT_VERSION via mise..."
   su - "$USERNAME" -c "\$HOME/.local/bin/mise use -g lazygit@$LAZYGIT_VERSION"
 fi
+
+# claude-code ships as a global mise tool so the post-create plugin
+# installer has `claude` on PATH without depending on the consumer
+# repo's mise.toml. Consumers that pin claude-code in their own
+# mise.toml automatically override this global — mise's most-local
+# declaration wins, so user versioning control is preserved.
+if [[ "$CLAUDE_CODE_VERSION" != "none" ]]; then
+  echo "==> [agent-ready] Installing claude-code@$CLAUDE_CODE_VERSION via mise..."
+  su - "$USERNAME" -c "\$HOME/.local/bin/mise use -g claude-code@$CLAUDE_CODE_VERSION"
+fi
+
+# Record plugin-install preference so post-create knows whether to
+# read .claude/settings.json.
+echo "${INSTALL_CLAUDE_PLUGINS:-true}" > /usr/local/share/agent-ready/.install-claude-plugins
+chmod 0644 /usr/local/share/agent-ready/.install-claude-plugins
 
 echo "==> [agent-ready] Seeding shell rc files..."
 # Append activations only if missing. We write to BOTH rc files because:

@@ -1,6 +1,6 @@
 {
   "id": "agent-ready",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "name": "Agent-Ready Dev Environment",
   "description": "Opinionated devcontainer setup for AI-assisted coding workflows: mise-managed tools, Starship prompt in zsh, Claude Code pre-accepts (onboarding, trust dialog, bypass-permissions warning), SSH commit signing auto-config, and host auth-token status reporting. Designed so agents (Claude Code, Cursor Agent, Codex) can operate in the container without interactive prompts.",
   "documentationURL": "https://github.com/moisesmorillo/devcontainer-features/tree/main/src/agent-ready",
@@ -31,6 +31,16 @@
       "type": "string",
       "default": "latest",
       "description": "Lazygit version to install via mise, or 'none' to skip."
+    },
+    "claudeCodeVersion": {
+      "type": "string",
+      "default": "latest",
+      "description": "Claude Code CLI version installed via mise. The repo's own mise.toml overrides this global default — use it to pin exact versions per project. Set to 'none' to skip (disables plugin install too)."
+    },
+    "installClaudePlugins": {
+      "type": "boolean",
+      "default": true,
+      "description": "Auto-install Claude Code plugins declared in the workspace's .claude/settings.json during post-create. Requires claude-code to be available."
     }
   },
 
