@@ -19,6 +19,7 @@ OS="$(uname -s)"
 
 gh_token=""
 claude_token=""
+claude_credentials_blob=""
 
 trim() {
   # Strips leading/trailing whitespace and any stray \r from tokens.
@@ -37,8 +38,13 @@ extract_from_keychain_macos() {
 
   # claude: stored in Keychain under service "Claude Code-credentials".
   # The blob is JSON: { "claudeAiOauth": { "accessToken": "...", ... } }.
-  # We extract the accessToken specifically since that's what
-  # CLAUDE_CODE_OAUTH_TOKEN expects.
+  #
+  # We extract BOTH:
+  #   1. The accessToken alone (for CLAUDE_CODE_OAUTH_TOKEN env var — backward compat)
+  #   2. The full blob (written to .claude-credentials.json so post-create
+  #      can install it as ~/.claude/.credentials.json — this gives Claude
+  #      Code full-scope auth including Remote Control, which env-var-based
+  #      tokens explicitly lack by design)
   if command -v security >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     local blob
     blob="$(security find-generic-password \
@@ -46,6 +52,7 @@ extract_from_keychain_macos() {
     if [[ -n "$blob" ]]; then
       claude_token="$(trim "$(printf '%s' "$blob" \
         | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null || true)")"
+      claude_credentials_blob="$blob"
     fi
   fi
 }
@@ -67,6 +74,7 @@ extract_from_files_linux() {
   if [[ -f "$HOME/.claude/.credentials.json" ]] && command -v jq >/dev/null 2>&1; then
     claude_token="$(trim "$(jq -r '.claudeAiOauth.accessToken // empty' \
       "$HOME/.claude/.credentials.json" 2>/dev/null || true)")"
+    claude_credentials_blob="$(cat "$HOME/.claude/.credentials.json" 2>/dev/null || true)"
   fi
 }
 
@@ -110,6 +118,20 @@ fi
   [[ -n "$claude_account" ]] && echo "CLAUDE_OAUTH_ACCOUNT=$claude_account"
 } > "$OUT"
 chmod 600 "$OUT"
+
+# Write the full credentials blob alongside .env.devcontainer so
+# post-create.sh can install it as ~/.claude/.credentials.json.
+# This gives Claude Code full-scope auth (including Remote Control)
+# because the CLI treats .credentials.json as a "full interactive
+# login" — unlike CLAUDE_CODE_OAUTH_TOKEN which is explicitly
+# restricted to inference-only by design.
+CREDS_OUT="$(dirname "$OUT")/.claude-credentials.json"
+if [[ -n "$claude_credentials_blob" ]]; then
+  printf '%s' "$claude_credentials_blob" > "$CREDS_OUT"
+  chmod 600 "$CREDS_OUT"
+else
+  rm -f "$CREDS_OUT"
+fi
 
 # Report what we got so the user sees it in VSCode's "Dev Containers" output channel.
 status_gh="missing"

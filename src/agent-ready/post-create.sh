@@ -29,17 +29,22 @@ if [[ -d "$HOME/.claude" ]]; then
   sudo chown -R "$(id -u):$(id -g)" "$HOME/.claude" 2>/dev/null || true
 fi
 
-# Remove stale .credentials.json when CLAUDE_CODE_OAUTH_TOKEN is present.
-# The env var (injected by init-secrets from the host Keychain) is the
-# single source of truth. A .credentials.json left over from a previous
-# `claude login` inside the container takes precedence and causes Claude
-# Code to use a different identity profile (e.g. "Claude Agent" /
-# "agent@domain") instead of the user's real git identity. Deleting it
-# forces Claude to fall back to the env var, which carries the user's
-# actual OAuth profile.
-if [[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" && -f "$HOME/.claude/.credentials.json" ]]; then
-  echo "==> [agent-ready] Removing stale .credentials.json (CLAUDE_CODE_OAUTH_TOKEN takes precedence)"
-  rm -f "$HOME/.claude/.credentials.json"
+# Install .credentials.json from the host's Keychain blob (written by
+# init-secrets.sh to .devcontainer/.claude-credentials.json via the
+# bind-mounted workspace). This gives Claude Code FULL-SCOPE auth
+# (including Remote Control) because the CLI treats .credentials.json
+# as a "full interactive login" — unlike CLAUDE_CODE_OAUTH_TOKEN which
+# is explicitly restricted to inference-only by design.
+#
+# The file is refreshable live: `mise run dev:refresh` on the host
+# regenerates it, and the bind mount makes it visible immediately.
+# We copy (not symlink) because ~/.claude/ is a named volume and
+# symlinks pointing outside it may not survive container restarts.
+CREDS_SRC="$(pwd)/.devcontainer/.claude-credentials.json"
+if [[ -f "$CREDS_SRC" ]]; then
+  echo "==> [agent-ready] Installing host credentials for full-scope auth (Remote Control enabled)"
+  cp "$CREDS_SRC" "$HOME/.claude/.credentials.json"
+  chmod 600 "$HOME/.claude/.credentials.json"
 fi
 
 # Three dialogs we pre-accept by seeding ~/.claude.json:
