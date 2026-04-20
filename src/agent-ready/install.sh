@@ -34,7 +34,7 @@ fi
 # (post-create.sh needs it for claude.json), and zsh (fallback if the
 # consumer didn't declare common-utils) into a single apt transaction
 # so the package index is only fetched once.
-NEEDS_APT=(ca-certificates)
+NEEDS_APT=(ca-certificates locales)
 command -v zstd >/dev/null 2>&1 || NEEDS_APT+=(zstd)
 command -v jq   >/dev/null 2>&1 || NEEDS_APT+=(jq)
 command -v zsh  >/dev/null 2>&1 || NEEDS_APT+=(zsh)
@@ -44,6 +44,15 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq --no-install-recommends "${NEEDS_APT[@]}"
 apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Generate C.UTF-8 locale so tmux, neovim, and other tools handle
+# multi-byte characters (§, ñ, ü, emojis) correctly. Without it,
+# LANG=C.UTF-8 in containerEnv is a no-op and the terminal falls
+# back to POSIX/ASCII, causing cursor misalignment on non-ASCII input.
+if ! locale -a 2>/dev/null | grep -q 'C.UTF-8\|C.utf8'; then
+  echo "==> [agent-ready] Generating C.UTF-8 locale..."
+  localedef -i C -f UTF-8 C.UTF-8 2>/dev/null || true
+fi
 
 # Make zsh the login shell if it isn't already. Idempotent: no-op when
 # common-utils already ran chsh, or when the base image set zsh as default.
