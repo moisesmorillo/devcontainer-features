@@ -119,13 +119,11 @@ fi
   [[ -n "$claude_token"   ]] && printf 'CLAUDE_CODE_OAUTH_TOKEN="%s"\n' "$claude_token"
   [[ -n "$git_email"      ]] && printf 'GIT_AUTHOR_EMAIL="%s"\n' "$git_email"
   [[ -n "$git_name"       ]] && printf 'GIT_AUTHOR_NAME="%s"\n' "$git_name"
-  # CLAUDE_OAUTH_ACCOUNT is JSON that may contain both double quotes and
-  # apostrophes (e.g. "mm@saptiva.com's Organization"). We single-quote
-  # the value and escape any internal single quotes with the '\'' trick.
-  if [[ -n "$claude_account" ]]; then
-    escaped_account="${claude_account//\'/\'\\\'\'}"
-    printf "CLAUDE_OAUTH_ACCOUNT='%s'\n" "$escaped_account"
-  fi
+  # NOTE: CLAUDE_OAUTH_ACCOUNT is NOT written here. It contains JSON with
+  # double quotes, apostrophes ("com's Organization"), and other characters
+  # that are impossible to safely escape in docker-compose's .env format.
+  # Instead, oauthAccount is written to .claude-account.json (see below)
+  # and post-create.sh reads it from there.
 } > "$OUT"
 chmod 600 "$OUT"
 
@@ -141,6 +139,17 @@ if [[ -n "$claude_credentials_blob" ]]; then
   chmod 600 "$CREDS_OUT"
 else
   rm -f "$CREDS_OUT"
+fi
+
+# Write oauthAccount as its own JSON file (not in .env — JSON with
+# quotes and apostrophes is impossible to escape in docker-compose's
+# env file format). post-create.sh merges this into ~/.claude.json.
+ACCOUNT_OUT="$(dirname "$OUT")/.claude-account.json"
+if [[ -n "$claude_account" ]]; then
+  printf '%s' "$claude_account" > "$ACCOUNT_OUT"
+  chmod 600 "$ACCOUNT_OUT"
+else
+  rm -f "$ACCOUNT_OUT"
 fi
 
 # Report what we got so the user sees it in VSCode's "Dev Containers" output channel.

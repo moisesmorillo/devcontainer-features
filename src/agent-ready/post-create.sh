@@ -71,16 +71,20 @@ if [[ "$BYPASS_PERMISSIONS" == "true" ]]; then
   JQ_PROGRAM="$JQ_PROGRAM | .bypassPermissionsModeAccepted = true"
 fi
 
-# Inject oauthAccount from the host (propagated by init-secrets.sh as
-# CLAUDE_OAUTH_ACCOUNT env var). This metadata tells Claude Code that
-# the token is from a full interactive login — without it, the CLI
-# treats CLAUDE_CODE_OAUTH_TOKEN as inference-only and blocks features
-# like Remote Control (/remote-control).
-if [[ -n "${CLAUDE_OAUTH_ACCOUNT:-}" ]]; then
-  JQ_PROGRAM="$JQ_PROGRAM | .oauthAccount = (\$account | fromjson)"
+# Inject oauthAccount from the host. init-secrets.sh writes it to
+# .devcontainer/.claude-account.json (a standalone JSON file, NOT an
+# env var — JSON with quotes and apostrophes is impossible to escape
+# safely in docker-compose's .env format). This metadata tells Claude
+# Code that the token is from a full interactive login — without it,
+# the CLI blocks features like Remote Control.
+ACCOUNT_FILE="$(pwd)/.devcontainer/.claude-account.json"
+if [[ -f "$ACCOUNT_FILE" ]]; then
+  JQ_PROGRAM="$JQ_PROGRAM | .oauthAccount = \$account"
 fi
 
-jq --arg ws "$WORKSPACE_PATH" --arg account "${CLAUDE_OAUTH_ACCOUNT:-{}}" "$JQ_PROGRAM" \
+jq --arg ws "$WORKSPACE_PATH" \
+   --argjson account "$(cat "$ACCOUNT_FILE" 2>/dev/null || echo 'null')" \
+   "$JQ_PROGRAM" \
   "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp" && mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
 
 # ---------------------------------------------------------------------------
