@@ -65,7 +65,17 @@ JQ_PROGRAM='
 if [[ "$BYPASS_PERMISSIONS" == "true" ]]; then
   JQ_PROGRAM="$JQ_PROGRAM | .bypassPermissionsModeAccepted = true"
 fi
-jq --arg ws "$WORKSPACE_PATH" "$JQ_PROGRAM" \
+
+# Inject oauthAccount from the host (propagated by init-secrets.sh as
+# CLAUDE_OAUTH_ACCOUNT env var). This metadata tells Claude Code that
+# the token is from a full interactive login — without it, the CLI
+# treats CLAUDE_CODE_OAUTH_TOKEN as inference-only and blocks features
+# like Remote Control (/remote-control).
+if [[ -n "${CLAUDE_OAUTH_ACCOUNT:-}" ]]; then
+  JQ_PROGRAM="$JQ_PROGRAM | .oauthAccount = (\$account | fromjson)"
+fi
+
+jq --arg ws "$WORKSPACE_PATH" --arg account "${CLAUDE_OAUTH_ACCOUNT:-{}}" "$JQ_PROGRAM" \
   "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp" && mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
 
 # ---------------------------------------------------------------------------
