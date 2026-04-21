@@ -113,32 +113,28 @@ if [[ -n "$SSH_PUB_KEY" ]]; then
   git config --global user.signingkey "$SSH_PUB_KEY"
   git config --global commit.gpgsign true
 
-  # Resolve the committer identity. Without user.email, git uses a
-  # hostname-based fallback (e.g. vscode@ab3f1c...) that GitHub does
-  # NOT recognize as belonging to your account → commits show up as
-  # "Unverified" even when correctly signed. We infer email from
-  # (in order): existing git config, GIT_AUTHOR_EMAIL env var, or
-  # the SSH public key comment (which is conventionally the email).
-  # Name follows the same priority chain.
-  EMAIL=$(git config user.email 2>/dev/null || true)
-  if [[ -z "$EMAIL" ]]; then
-    EMAIL="${GIT_AUTHOR_EMAIL:-}"
-  fi
+  # Always set user.email and user.name in the global gitconfig.
+  # Priority: GIT_AUTHOR_EMAIL env (from host via init-secrets) > SSH key comment.
+  # We write unconditionally because:
+  #   - A stale local .git/config value (from a previous Claude session) can
+  #     trick the "skip if already set" check, then when that local is cleaned
+  #     the global is left empty → unsigned commits.
+  #   - The global is the RIGHT place for identity in a devcontainer — if a
+  #     repo needs a different identity it can set it locally, and git's
+  #     local > global precedence handles it.
+  EMAIL="${GIT_AUTHOR_EMAIL:-}"
   if [[ -z "$EMAIL" ]]; then
     EMAIL=$(awk '{print $NF}' "$SSH_PUB_KEY")
   fi
-  if [[ -n "$EMAIL" ]] && [[ -z "$(git config user.email 2>/dev/null || true)" ]]; then
-    echo "==> [agent-ready] Setting git user.email=$EMAIL (from SSH key comment)"
+  if [[ -n "$EMAIL" ]]; then
     git config --global user.email "$EMAIL"
+    echo "==> [agent-ready] git user.email=$EMAIL"
   fi
 
-  NAME=$(git config user.name 2>/dev/null || true)
-  if [[ -z "$NAME" ]]; then
-    NAME="${GIT_AUTHOR_NAME:-}"
-  fi
-  if [[ -n "$NAME" ]] && [[ -z "$(git config user.name 2>/dev/null || true)" ]]; then
-    echo "==> [agent-ready] Setting git user.name=$NAME"
+  NAME="${GIT_AUTHOR_NAME:-}"
+  if [[ -n "$NAME" ]]; then
     git config --global user.name "$NAME"
+    echo "==> [agent-ready] git user.name=$NAME"
   fi
 
   # Store allowed_signers under .config/git because .ssh is typically

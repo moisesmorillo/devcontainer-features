@@ -1,6 +1,6 @@
 {
   "id": "agent-ready",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "name": "Agent-Ready Dev Environment",
   "description": "Opinionated devcontainer setup for AI-assisted coding workflows: mise-managed tools, Starship prompt in zsh, Claude Code pre-accepts (onboarding, trust dialog, bypass-permissions warning), SSH commit signing auto-config, and host auth-token status reporting. Designed so agents (Claude Code, Cursor Agent, Codex) can operate in the container without interactive prompts.",
   "documentationURL": "https://github.com/moisesmorillo/devcontainer-features/tree/main/src/agent-ready",
